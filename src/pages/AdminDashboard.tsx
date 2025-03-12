@@ -6,12 +6,12 @@ import StatsCards from "../components/admin/StatsCards";
 import AmbassadorList from "../components/admin/AmbassadorList";
 import ReceiptList from "../components/admin/ReceiptList";
 import TransactionList from "../components/admin/TransactionList";
-import KYCList from "../components/kyc/KycList"; 
-import AmbassadorViewDialog from "../components/admin/AmbassadorViewDialog";
+ import AmbassadorViewDialog from "../components/admin/AmbassadorViewDialog";
 import ReceiptViewDialog from "../components/admin/ReceiptViewDialog";
 import KYCViewDialog from "../components/kyc/KYCViewDialog "; 
 import LoadingScreen from "./Loading";
 import { Ambassador, Receipt, Transaction, KYCApplication } from "../types"; 
+import KycList from "../components/kyc/KycList";
 
 export default function AdminDashboard() {
   const [ambassadors, setAmbassadors] = useState<Ambassador[]>([]);
@@ -230,9 +230,9 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="kyc">
-          <KYCList
+          <KycList
             kycApplications={kycApplications}
-            onViewKYC={(kyc) => {
+            onViewKYC={(kyc:KYCApplication) => {
               setCurrentKYC(kyc);
               setIsKYCViewOpen(true);
             }}
