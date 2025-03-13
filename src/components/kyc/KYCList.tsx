@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Button } from "../ui/button";
 import { KYCApplication } from "../../types";
- 
+
 interface KYCListProps {
   kycApplications: KYCApplication[];
   onViewKYC: (kyc: KYCApplication) => void;
