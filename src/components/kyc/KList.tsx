@@ -7,7 +7,7 @@ interface KYCListProps {
   onViewKYC: (kyc: KYCApplication) => void;
 }
 
-export function KycList({ kycApplications, onViewKYC }: KYCListProps) {
+export default function KycList({ kycApplications, onViewKYC }: KYCListProps) {
   return (
     <Table>
       <TableHeader>
