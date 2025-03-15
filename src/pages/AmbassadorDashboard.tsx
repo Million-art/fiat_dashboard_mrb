@@ -12,7 +12,7 @@ import Transactions from "../components/ambassador/Transactions";
 import LoadingScreen from "./Loading";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Info } from "lucide-react";
-import { Tooltip } from "../components/ui/tooltip"; // Import the Tooltip component
+import { Tooltip } from "../components/ui/tooltip";
 
 const AmbassadorDashboard: React.FC = () => {
   const [ambassador, setAmbassador] = useState<Ambassador | null>(null);
@@ -35,10 +35,14 @@ const AmbassadorDashboard: React.FC = () => {
         // Fetch ambassador data
         const ambassadorDoc = await getDoc(doc(db, "staffs", ambassadorId));
         if (ambassadorDoc.exists()) {
-          setAmbassador({
+          const ambassadorData = {
             id: ambassadorDoc.id,
             ...ambassadorDoc.data(),
-          } as Ambassador);
+          } as Ambassador;
+          setAmbassador(ambassadorData);
+
+          // Log the KYC status
+          console.log("Ambassador KYC Status:", ambassadorData.kyc);
         }
 
         // Fetch receipts
@@ -174,7 +178,7 @@ const AmbassadorDashboard: React.FC = () => {
           >
             <TabsTrigger
               value="deposit"
-              disabled={ambassador?.kyc !== "verified"} 
+              disabled={ambassador?.kyc !== "verified"} // Disable if KYC is not verified
             >
               Make Deposit
             </TabsTrigger>
