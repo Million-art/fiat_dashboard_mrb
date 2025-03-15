@@ -71,12 +71,12 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen ">
+      <div className=" p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Forgot Password</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium ">
               Email
             </label>
             <input
@@ -93,7 +93,7 @@ const ForgotPassword: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? <Loader2 className="w-5 h-5 mx-auto" /> : "Send Reset Link"}
           </button>
@@ -111,7 +111,7 @@ const ForgotPassword: React.FC = () => {
         <div className="mt-4 text-center">
           <button
             onClick={() => navigate("/login")}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm  hover:underline"
           >
             Back to Login
           </button>
