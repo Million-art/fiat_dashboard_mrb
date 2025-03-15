@@ -1,95 +1,100 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase/firebaseConfig";
-import LoadingScreen from "../pages/Loading";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { 
+  onAuthStateChanged, 
+  User, 
+  signOut 
+} from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig"; 
 
+// Define AuthUser type
 interface AuthUser {
   uid: string;
   email: string | null;
-  role: "admin" | "ambassador";
+  role: "admin" | "ambassador" | "superadmin";
 }
 
+// Define AuthContext type
 interface AuthContextType {
   currentUser: AuthUser | null;
   isLoading: boolean;
   logout: () => Promise<void>;
 }
 
+// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+// Provide context
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setIsLoading(true);
-  
-      if (user) {
-        // Fetch the user's role from Firestore
-        const userDocRef = doc(db, "staffs", user.uid);
-        const userDoc = await getDoc(userDocRef);
-  
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const role = userData.role;
-  
-  
-          const authUser: AuthUser = {
-            uid: user.uid,
-            email: user.email,
-            role: role,
-          };
-  
-          setCurrentUser(authUser);
-          localStorage.setItem("authUser", JSON.stringify(authUser));
-        } else {
-          console.error("User document not found in Firestore.");
-          setCurrentUser(null);
-          localStorage.removeItem("authUser");
-        }
-      } else {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (!user) {
         setCurrentUser(null);
-        localStorage.removeItem("authUser");
+        setIsLoading(false);
+        return;
       }
   
-      setIsLoading(false);
+      setIsLoading(true);
+  
+      try {
+
+        await user.getIdToken(true);
+        const idTokenResult = await user.getIdTokenResult(true);
+  
+        console.log("Custom Claims:", idTokenResult.claims);
+  
+        let userRole: "admin" | "ambassador" | "superadmin" = "ambassador"; // Default role
+        if (idTokenResult.claims.superadmin) {
+          userRole = "superadmin";
+        } else if (idTokenResult.claims.role) {
+          userRole = idTokenResult.claims.role as "admin" | "ambassador";
+        }
+
+        // Set current user state
+        const authUser: AuthUser = {
+          uid: user.uid,
+          email: user.email,
+          role: userRole,
+        };
+  
+        setCurrentUser(authUser);
+        console.log("Auth User Set:", authUser);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        setCurrentUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     });
   
     return () => unsubscribe();
   }, []);
+  
+
   const logout = async () => {
     try {
       await signOut(auth);
-      localStorage.removeItem("authUser");
       setCurrentUser(null);
+      console.log("User logged out successfully");
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
-  const value = {
-    currentUser,
-    isLoading,
-    logout,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
-      {isLoading ? <LoadingScreen /> : children}
+    <AuthContext.Provider value={{ currentUser, isLoading, logout }}>
+      {children}
     </AuthContext.Provider>
   );
+};
+
+// Custom hook for using auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };

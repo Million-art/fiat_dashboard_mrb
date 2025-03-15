@@ -7,14 +7,14 @@ interface KYCViewDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   kyc: KYCApplication | null;
-  onApprove: (kycId: string) => void;
-  onReject: (kycId: string) => void;
+  onApprove: (kycId: string) => Promise<void>; // Ensure onApprove is async
+  onReject: (kycId: string) => Promise<void>; // Ensure onReject is async
 }
 
 export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, onReject }: KYCViewDialogProps) {
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
-  const [approving, setApproving] = useState(false); // Loading state for Approve button
-  const [rejecting, setRejecting] = useState(false); // Loading state for Reject button
+  const [approving, setApproving] = useState(false);  
+  const [rejecting, setRejecting] = useState(false);  
 
   if (!kyc) return null;
 
@@ -29,26 +29,26 @@ export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, on
   const handleApprove = async () => {
     if (!kyc) return;
 
-    setApproving(true); // Start loading for Approve button
+    setApproving(true); 
     try {
-      await onApprove(kyc.id);
+      await onApprove(kyc.id); // Await the async function
     } catch (error) {
       console.error("Error approving KYC:", error);
     } finally {
-      setApproving(false); // Stop loading for Approve button
+      setApproving(false);  
     }
   };
 
   const handleReject = async () => {
     if (!kyc) return;
 
-    setRejecting(true); // Start loading for Reject button
+    setRejecting(true);  
     try {
-      await onReject(kyc.id);
+      await onReject(kyc.id); // Await the async function
     } catch (error) {
       console.error("Error rejecting KYC:", error);
     } finally {
-      setRejecting(false); // Stop loading for Reject button
+      setRejecting(false); 
     }
   };
 
@@ -69,6 +69,10 @@ export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, on
                 <div>
                   <h3 className="font-medium text-gray-600">Ambassador:</h3>
                   <p className="text-lg">{kyc.firstName} {kyc.lastName}</p>
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-600">Telegram Username:</h3>
+                  <p className="text-lg">{kyc.tgUsername}</p>
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-600">Email:</h3>

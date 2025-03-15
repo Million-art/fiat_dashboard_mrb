@@ -5,14 +5,12 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/card";
 import { CheckCircle } from 'lucide-react';
-import { serverTimestamp, doc, setDoc } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { functions } from "../firebase/firebaseConfig";
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { E164Number } from "libphonenumber-js";
+import { httpsCallable } from "firebase/functions";
 
-const auth = getAuth();
 
 export default function AmbassadorRegister() {
   const router = useNavigate();
@@ -23,6 +21,7 @@ export default function AmbassadorRegister() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    tgUsername:"",
     email: "",
     phone: "",
     password: "",
@@ -32,6 +31,7 @@ export default function AmbassadorRegister() {
   const [errors, setErrors] = useState<Record<string, string | null>>({
     firstName: null,
     lastName: null,
+    tgUsername: null,
     email: null,
     phone: null,
     password: null,
@@ -55,17 +55,22 @@ export default function AmbassadorRegister() {
   const validateForm = () => {
     const newErrors: Record<string, string | null> = {};
     let isValid = true;
-
+  
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
       isValid = false;
     }
-
+  
     if (!formData.lastName.trim()) {
       newErrors.lastName = "Last name is required";
       isValid = false;
     }
-
+  
+    if (!formData.tgUsername.trim()) {
+      newErrors.tgUsername = "Telegram username is required";
+      isValid = false;
+    }
+  
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -73,7 +78,7 @@ export default function AmbassadorRegister() {
       newErrors.email = "Email is invalid";
       isValid = false;
     }
-
+  
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
       isValid = false;
@@ -81,7 +86,7 @@ export default function AmbassadorRegister() {
       newErrors.phone = "Phone number is invalid";
       isValid = false;
     }
-
+  
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
       isValid = false;
@@ -89,57 +94,50 @@ export default function AmbassadorRegister() {
       newErrors.password = "Password must be at least 6 characters";
       isValid = false;
     }
-
+  
     setErrors(newErrors);
     return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       return;
     }
-
+  
     try {
       setIsSubmitting(true);
-
-      // Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-      console.log(await user.getIdTokenResult());
-      // Send verification email
-      await sendEmailVerification(user);
-
-      // Save user data in Firestore
-      await setDoc(doc(db, "staffs", user.uid), {
+  
+      // Call Cloud Function to Create Ambassador User
+      const createAmbassadorUser = httpsCallable(functions, "createAmbassadorUser");
+      const response = await createAmbassadorUser({
+        email: formData.email,
+        password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
+        tgUsername: formData.tgUsername,
         phone: formData.phone,
-        kyc: "pending",
-        role: "ambassador",
-        createdAt: serverTimestamp(),
-        address: "", 
-        country: "",
-        photoUrl: "",
       });
-
+  
+      console.log("Ambassador Created Successfully:", response.data);
+  
       setSubmitSuccess(true);
-      setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "" }); // Reset form
-
+  
       // Redirect after 2 seconds
       setTimeout(() => {
         router("/login");
       }, 2000);
     } catch (error: any) {
       console.error("Error submitting registration:", error);
-      if (error.code === "auth/email-already-in-use") {
-        setErrors(prev => ({ ...prev, email: "Email is already in use" }));
-      } else if (error.code === "auth/weak-password") {
-        setErrors(prev => ({ ...prev, password: "Password is too weak" }));
+  
+      // Handle specific errors
+      if (error.code === "already-exists") {
+        setErrors((prev) => ({ ...prev, email: "Email is already in use." }));
+      } else if (error.code === "invalid-argument") {
+        setErrors((prev) => ({ ...prev, email: "Invalid email or password." }));
       } else {
-        setErrors(prev => ({ ...prev, email: "An error occurred. Please try again." }));
+        setErrors((prev) => ({ ...prev, email: "An error occurred. Please try again." }));
       }
     } finally {
       setIsSubmitting(false);
@@ -157,10 +155,7 @@ export default function AmbassadorRegister() {
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-10">
           <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-          <p className="text-center max-w-md">
-            Please check your email and click the activation link to complete your registration.
-            You will be redirected to the login page.
-          </p>
+
         </CardContent>
       </Card>
     );
@@ -220,6 +215,21 @@ export default function AmbassadorRegister() {
                 value={formData.lastName}
                 onChange={handleInputChange}
                 placeholder="Doe"
+                className={errors.lastName ? "border-red-500" : ""}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-red-500">{errors.lastName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tgUsername">Telegram username</Label>
+              <Input
+                id="tgUsername"
+                name="tgUsername"
+                value={formData.tgUsername}
+                onChange={handleInputChange}
+                placeholder="@abcd"
                 className={errors.lastName ? "border-red-500" : ""}
               />
               {errors.lastName && (

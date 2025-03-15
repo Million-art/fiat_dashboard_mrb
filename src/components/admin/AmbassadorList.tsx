@@ -16,6 +16,7 @@ export default function AmbassadorList({ ambassadors, onDelete, onView }: Ambass
         <TableRow>
           <TableHead>First Name</TableHead>
           <TableHead>Last Name</TableHead>
+          <TableHead>Telegram Username</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
 
@@ -27,6 +28,7 @@ export default function AmbassadorList({ ambassadors, onDelete, onView }: Ambass
           <TableRow key={ambassador.id}>
             <TableCell>{ambassador.firstName}</TableCell>
             <TableCell>{ambassador.lastName}</TableCell>
+            <TableCell>{ambassador.tgUsername}</TableCell>
             <TableCell>{ambassador.email}</TableCell>
             <TableCell>{ambassador.phone}</TableCell>
 

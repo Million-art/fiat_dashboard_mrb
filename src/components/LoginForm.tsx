@@ -1,22 +1,20 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../firebase/firebaseConfig';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-// Define the LoginFormProps interface
 interface LoginFormProps {
-  onSuccess?: (userRole: 'admin' | 'ambassador', userId: string) => void;
+  onSuccess?: (userRole: "admin" | "ambassador" | "superadmin", userId: string) => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,54 +30,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
   
-      // Check if the email is verified
-      if (!user.emailVerified) {
-        setError('Please verify your email before logging in.');
-        setIsLoading(false);
-        return; // Stop further execution
+      // Force refresh the ID token to get the latest custom claims
+      const idTokenResult = await user.getIdTokenResult(true);
+  
+      // Extract custom claims
+      const { superadmin, admin, ambassador } = idTokenResult.claims;
+  
+      // Determine the user's role based on custom claims
+      let userRole: "admin" | "ambassador" | "superadmin" = "ambassador"; // Default role
+      if (superadmin) {
+        userRole = "superadmin";
+      } else if (admin) {
+        userRole = "admin";
+      } else if (ambassador) {
+        userRole = "ambassador";
       }
   
-      // Fetch the user's role from Firestore
-      const userDocRef = doc(db, 'staffs', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      console.log("Custom Claims:", idTokenResult.claims); // Debugging
+      console.log("User Role:", userRole); // Debugging
   
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const userRole = userData.role;
-  
-        // Check if the role is valid
-        if (userRole === 'admin' || userRole === 'ambassador') {
-          if (onSuccess) {
-            onSuccess(userRole, user.uid);
-          } else {
-            navigate(userRole === 'admin' ? `/admin?userId=${user.uid}` : `/ambassador?userId=${user.uid}`);
-          }
-        } else {
-          setError('Invalid user role.');
-        }
-      } else {
-        setError('User document not found. Please verify your email first.');
+      if (onSuccess) {
+        onSuccess(userRole, user.uid);
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-  
-      // Detailed error handling
-      switch (error.code) {
-        case 'auth/user-not-found':
-          setError('Email does not exist. Please check your email or register.');
-          break;
-        case 'auth/wrong-password':
-          setError('Incorrect password. Please try again.');
-          break;
-        case 'auth/invalid-email':
-          setError('Invalid email address.');
-          break;
-        case 'auth/too-many-requests':
-          setError('Too many failed login attempts. Please try again later.');
-          break;
-        default:
-          setError('An error occurred during login. Please try again.');
-      }
+      console.error("Login error:", error);
+      setError("An error occurred during login. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +64,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl text-center">Login</CardTitle>
-        <CardDescription className='text-center'>Enter your credentials to access your dashboard</CardDescription>
+        <CardDescription className="text-center">
+          Enter your credentials to access your dashboard
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,7 +88,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <div className="relative">
               <Input
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -128,7 +105,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 <span className="sr-only">
-                  {showPassword ? 'Hide password' : 'Show password'}
+                  {showPassword ? "Hide password" : "Show password"}
                 </span>
               </Button>
             </div>
@@ -143,7 +120,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                 Logging in...
               </>
             ) : (
-              'Log in'
+              "Log in"
             )}
           </Button>
         </form>
@@ -152,14 +129,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         <Button
           variant="link"
           className="text-sm text-blue-500"
-          onClick={() => navigate('/forgot-password')}
+          onClick={() => navigate("/forgot-password")}
         >
           Forgot password?
         </Button>
         <Button
           variant="link"
           className="text-sm text-blue-500"
-          onClick={() => navigate('/ambassador-register')}
+          onClick={() => navigate("/ambassador-register")}
         >
           Register as Agent
         </Button>

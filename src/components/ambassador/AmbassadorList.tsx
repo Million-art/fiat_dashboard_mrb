@@ -22,6 +22,7 @@ const AmbassadorList: React.FC<AmbassadorListProps> = ({ ambassadors, onEdit, on
             <TableRow>
               <TableHead>Photo</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Telegram Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Country</TableHead>
@@ -47,6 +48,7 @@ const AmbassadorList: React.FC<AmbassadorListProps> = ({ ambassadors, onEdit, on
                     />
                   </TableCell>
                   <TableCell className="font-medium">{ambassador.firstName + ' '+ ambassador.lastName}</TableCell>
+                  <TableCell>{ambassador.tgUsername}</TableCell>
                   <TableCell>{ambassador.email}</TableCell>
                   <TableCell>{ambassador.phone}</TableCell>
                   <TableCell>{ambassador.country}</TableCell>
