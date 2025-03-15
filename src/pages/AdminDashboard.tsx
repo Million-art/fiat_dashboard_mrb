@@ -11,7 +11,7 @@ import ReceiptViewDialog from "../components/admin/ReceiptViewDialog";
 import KYCViewDialog from "../components/kyc/KYCViewDialog "; 
 import LoadingScreen from "./Loading";
 import { Ambassador, Receipt, Transaction, KYCApplication } from "../types"; 
-import KycList from "../components/kyc/KycList";
+import KList from "../components/kyc/KList";
 
 export default function AdminDashboard() {
   const [ambassadors, setAmbassadors] = useState<Ambassador[]>([]);
@@ -265,7 +265,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="kyc">
-          <KycList
+          <KList
             kycApplications={kycApplications}
             onViewKYC={(kyc:KYCApplication) => {
               setCurrentKYC(kyc);
