@@ -28,6 +28,10 @@ export default function AmbassadorViewDialog({ isOpen, onOpenChange, ambassador 
               <p className="text-base">{ambassador.lastName}</p>
             </div>
             <div>
+              <p className="font-medium text-sm text-gray-500">Telegram Username</p>
+              <p className="text-base">{ambassador.tgUsername}</p>
+            </div>
+            <div>
               <p className="font-medium text-sm text-gray-500">Email</p>
               <p className="text-base">{ambassador.email}</p>
             </div>

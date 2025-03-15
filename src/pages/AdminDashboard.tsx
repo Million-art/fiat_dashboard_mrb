@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
+import { collection, getDocs, deleteDoc, doc, updateDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebase/firebaseConfig";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import StatsCards from "../components/admin/StatsCards";
 import AmbassadorList from "../components/admin/AmbassadorList";
@@ -116,39 +116,74 @@ export default function AdminDashboard() {
 
   const handleApproveKYC = async (kycId: string) => {
     try {
-      // Update the KYC status to "approved" in Firestore
-      await updateDoc(doc(db, "kycApplications", kycId), {
-        status: "approved",
-      });
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User is not authenticated.");
+      }
   
-      // Update the local state
-      setKYCApplications((prevKYC) =>
-        prevKYC.map((kyc) =>
-          kyc.id === kycId ? { ...kyc, status: "approved" } : kyc
-        )
+      // Log user role for debugging
+      const idTokenResult = await user.getIdTokenResult();
+      console.log("User role:", idTokenResult.claims.role);
+  
+      // Update the KYC application status to "approved"
+      await setDoc(
+        doc(db, "kycApplications", kycId),
+        {
+          status: "approved",
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: user.uid,
+        },
+        { merge: true }
       );
+  
+      // Update the staff's KYC status to "approved"
+      await setDoc(
+        doc(db, "staffs", kycId),
+        {
+          kyc: "approved",
+        },
+        { merge: true }
+      );
+  
+      console.log("KYC application approved successfully");
     } catch (error) {
       console.error("Error approving KYC:", error);
+      throw error;
     }
   };
   
-  const handleRejectKYC = async (kycId: string) => {
+  const handleRejectKYC = async (kycId: string, rejectionReason?: string) => {
     try {
-      // Update the KYC status to "rejected" in Firestore
-      await updateDoc(doc(db, "kycApplications", kycId), {
-        status: "rejected",
-      });
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("User is not authenticated.");
+      }
   
-      // Update the local state
-      setKYCApplications((prevKYC) =>
-        prevKYC.map((kyc) =>
-          kyc.id === kycId ? { ...kyc, status: "rejected" } : kyc
-        )
-      );
+      // Prepare the update data
+      const updateData: Record<string, any> = {
+        status: "rejected",
+        reviewedAt: new Date().toISOString(),
+        reviewedBy: user.uid,
+      };
+  
+      // Only add rejectionReason if it's defined
+      if (rejectionReason) {
+        updateData.rejectionReason = rejectionReason;
+      }
+  
+      // Update the KYC application status
+      await setDoc(doc(db, "kycApplications", kycId), updateData, { merge: true });
+  
+      // Update the staff's KYC status to "rejected"
+      await setDoc(doc(db, "staffs", kycId), { kyc: "rejected" }, { merge: true });
+  
+      console.log("KYC application rejected successfully");
     } catch (error) {
       console.error("Error rejecting KYC:", error);
+      throw error;
     }
   };
+  
 
   if (loading) {
     return <LoadingScreen />;

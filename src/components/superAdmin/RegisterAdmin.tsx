@@ -1,21 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../ui/card";
 import { CheckCircle } from 'lucide-react';
-import { serverTimestamp, doc, setDoc } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
-import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { functions } from "../../firebase/firebaseConfig";
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { E164Number } from "libphonenumber-js";
+import { httpsCallable } from "firebase/functions";
 
-const auth = getAuth();
 
 export default function AdminRegister() {
-  const router = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -23,6 +19,7 @@ export default function AdminRegister() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    tgUsername:"",
     email: "",
     phone: "",
     password: "",
@@ -32,6 +29,7 @@ export default function AdminRegister() {
   const [errors, setErrors] = useState<Record<string, string | null>>({
     firstName: null,
     lastName: null,
+    tgUsername: null,
     email: null,
     phone: null,
     password: null,
@@ -65,6 +63,10 @@ export default function AdminRegister() {
 
     if (!formData.lastName.trim()) {
       newErrors.lastName = "Last name is required";
+      isValid = false;
+    }
+    if (!formData.tgUsername.trim()) {
+      newErrors.tgUsername = "telegram  username is required";
       isValid = false;
     }
 
@@ -103,59 +105,49 @@ export default function AdminRegister() {
     try {
       setIsSubmitting(true);
   
-      // Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-  
-      // Send verification email
-      await sendEmailVerification(user);
-  
-      // Save user data in Firestore with role: "admin"
-      await setDoc(doc(db, "staffs", user.uid), {
+      // Step 1: Call Cloud Function to Create Admin User
+      const createAdminUser = httpsCallable(functions, "createAdminUser");
+      const response = await createAdminUser({
+        email: formData.email,
+        password: formData.password,
+        tgUsername: formData.tgUsername,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
         phone: formData.phone,
-        uid: user.uid,
-        emailStatus: "pending", 
-        kyc: "pending",
-        role: "admin",  // Default role for admin
-        createdAt: serverTimestamp(),
       });
+  
+      console.log("Admin Created Successfully:", response.data);
   
       setSubmitSuccess(true);
   
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        router("/login");
-      }, 2000);
+
     } catch (error: any) {
       console.error("Error submitting registration:", error);
-      if (error.code === "auth/email-already-in-use") {
-        setErrors(prev => ({ ...prev, email: "Email is already in use" }));
+  
+      // Handle specific errors
+      if (error.code === "permission-denied") {
+        setErrors((prev) => ({ ...prev, email: "Only superadmins can create admin users" }));
+      } else if (error.code === "internal") {
+        setErrors((prev) => ({ ...prev, email: "An error occurred. Please try again." }));
       } else {
-        setErrors(prev => ({ ...prev, email: "An error occurred. Please try again." }));
+        setErrors((prev) => ({ ...prev, email: "An error occurred. Please try again." }));
       }
     } finally {
       setIsSubmitting(false);
     }
   };
+  
 
   if (submitSuccess) {
     return (
       <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
           <CardTitle className="text-center">Registration Successful</CardTitle>
-          <CardDescription className="text-center">
-            An activation link has been sent to your email.
-          </CardDescription>
+
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-10">
           <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-          <p className="text-center max-w-md">
-            Please check your email and click the activation link to complete your registration.
-            You will be redirected to the login page.
-          </p>
+
         </CardContent>
       </Card>
     );
@@ -199,6 +191,20 @@ export default function AdminRegister() {
               />
               {errors.lastName && (
                 <p className="text-sm text-red-500">{errors.lastName}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tgUsername">Telegram Username</Label>
+              <Input
+                id="tgUsername"
+                name="tgUsername"
+                value={formData.tgUsername}
+                onChange={handleInputChange}
+                placeholder="@abc"
+                className={errors.tgUsername ? "border-red-500" : ""}
+              />
+              {errors.tgUsername && (
+                <p className="text-sm text-red-500">{errors.tgUsername}</p>
               )}
             </div>
 

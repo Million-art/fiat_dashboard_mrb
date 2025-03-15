@@ -3,6 +3,7 @@ export interface KYCApplication {
   ambassadorId: string; // ID of the user who submitted the application
   firstName: string; // Applicant's first name
   lastName: string; // Applicant's last name
+  tgUsername: string; // Applicant's tg name
   email: string; // Applicant's email address
   phone: string; // Applicant's phone number
   address: string; // Applicant's address
@@ -54,6 +55,7 @@ export interface Receipt {
     id: string;
     firstName: string;
     lastName: string;
+    tgUsername: string;
     email: string;
     phone: string;
     address?: string; // Optional field

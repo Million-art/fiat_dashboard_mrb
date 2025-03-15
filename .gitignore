@@ -11,10 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
-
+firebase
 env
 .env
-
+makeSuperAdmin.js
+serviceAccountKey.json
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

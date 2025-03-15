@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { db, storage } from "../../firebase/firebaseConfig";
+import { auth, db, storage } from "../../firebase/firebaseConfig";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import PhoneInput from "react-phone-number-input";
@@ -16,7 +15,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { FileUpload } from "../FileUpload";
 import {
   Select,
@@ -28,13 +27,13 @@ import {
 import countries from "../../lib/countries.json";
 import { KYCApplication } from "../../types";
 import { E164Number } from "libphonenumber-js";
+import SubmitMessage from "./SubmitMessage";
 
 interface KYCFormProps {
   ambassadorId: string;
 }
 
 export default function KYCForm({ ambassadorId }: KYCFormProps) {
-  const router = useNavigate();
   const [activeTab, setActiveTab] = useState("personal");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -42,6 +41,7 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    tgUsername: "",
     email: "",
     phone: "",
     address: "",
@@ -62,6 +62,7 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
   const [errors, setErrors] = useState<Record<string, string | null>>({
     firstName: null,
     lastName: null,
+    tgUsername: null,
     email: null,
     phone: null,
     address: null,
@@ -79,9 +80,12 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         const ambassadorDoc = await getDoc(doc(db, "staffs", ambassadorId));
         if (ambassadorDoc.exists()) {
           const data = ambassadorDoc.data();
+  
+          // Set form data
           setFormData({
             firstName: data.firstName || "",
             lastName: data.lastName || "",
+            tgUsername: data.tgUsername || "",
             email: data.email || "",
             phone: data.phone || "",
             address: data.address || "",
@@ -89,18 +93,27 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
             documentType: data.documentType || "Passport",
             photoUrl: data.photoUrl || "",
           });
+  
+          // Set photo preview if photoUrl exists
           if (data.photoUrl) {
             setPhotoPreview(data.photoUrl);
+          }
+  
+          // Fetch and set ID front and back URLs if they exist
+          if (data.documentFrontUrl) {
+            setIdFrontPreview(data.documentFrontUrl);
+          }
+          if (data.documentBackUrl) {
+            setIdBackPreview(data.documentBackUrl);
           }
         }
       } catch (err) {
         console.error("Error fetching ambassador data:", err);
       }
     };
-
+  
     fetchAmbassadorData();
   }, [ambassadorId]);
-
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -298,49 +311,62 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     // Validate both steps
     const isPersonalValid = validatePersonalInfo();
     const isIdValid = validateIdVerification();
-
+    console.log(isPersonalValid, isIdValid);
     if (!isPersonalValid) {
       setActiveTab("personal");
       return;
     }
-
+  
     if (!isIdValid) {
       setActiveTab("verification");
       return;
     }
-
+  
     try {
       setIsSubmitting(true);
+      
+      const user = auth.currentUser; 
+      if (!user) {
+        throw new Error("User is not authenticated.");
+      }
+  
+      const userUid = user.uid;
+  
+      // Ensure the ambassadorId matches the authenticated user's UID
+      if (ambassadorId !== userUid) {
+        throw new Error("Unauthorized: Ambassador ID does not match authenticated user.");
+      }
 
       // Upload profile photo
       let photoUrl = formData.photoUrl;
       if (photoFile) {
         photoUrl = await uploadFile(
           photoFile,
-          `kyc/${ambassadorId}/profile_photo.jpg`
+          `kyc/${userUid}/profile_photo.jpg`
         );
       }
-
+  
       // Upload ID files
       const idFrontUrl = await uploadFile(
         idFrontFile as File,
-        `kyc/${ambassadorId}/id_front.jpg`
+        `kyc/${userUid}/id_front.jpg`
       );
       const idBackUrl = await uploadFile(
         idBackFile as File,
-        `kyc/${ambassadorId}/id_back.jpg`
+        `kyc/${userUid}/id_back.jpg`
       );
-
+  
       // Create KYC application object
       const kycApplication: KYCApplication = {
-        id: ambassadorId,
-        ambassadorId: ambassadorId,
+        id: userUid,
+        ambassadorId: userUid,
         firstName: formData.firstName,
         lastName: formData.lastName,
+        tgUsername: formData.tgUsername,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
@@ -352,26 +378,24 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         status: "pending",
         submittedAt: new Date().toISOString(),
       };
-
+  
+      console.log("KYC Application Data:", kycApplication);
+  
       // Save application to Firestore
-      await setDoc(doc(db, "kycApplications", ambassadorId), kycApplication);
-
+      await setDoc(doc(db, "kycApplications", userUid), kycApplication);
+  
       // Update ambassador's KYC status to "pending"
       await setDoc(
-        doc(db, "staffs", ambassadorId),
+        doc(db, "staffs", userUid),
         {
           kyc: "pending",
           photoUrl,
         },
         { merge: true }
       );
-
+  
       setSubmitSuccess(true);
 
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        router("/ambassador");
-      }, 2000);
     } catch (error) {
       console.error("Error submitting KYC application:", error);
     } finally {
@@ -381,25 +405,8 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
 
   if (submitSuccess) {
     return (
-      <Card className="w-full max-w-3xl mx-auto mt-10">
-        <CardHeader>
-          <CardTitle className="text-center">Application Submitted</CardTitle>
-          <CardDescription className="text-center">
-            Your KYC application has been submitted successfully
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center py-10">
-          <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-          <p className="text-center max-w-md">
-            Thank you for submitting your KYC application. We will review your
-            information and get back to you shortly. You will be redirected to
-            your dashboard.
-          </p>
-          <button className="px-4 py-2 bg-primary rounded-lg mt-5">
-            <a href="/ambassador">Back to Home</a>
-          </button>
-        </CardContent>
-      </Card>
+      <SubmitMessage />
+
     );
   }
 
@@ -450,6 +457,20 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
                     <p className="text-sm text-red-500">{errors.lastName}</p>
                   )}
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tgUsername">Telegram Username</Label>
+                  <Input
+                    id="tgUsername"
+                    name="tgUsername"
+                    value={formData.tgUsername}
+                    onChange={handleInputChange}
+                    placeholder="Doe"
+                    className={errors.tgUsername ? "border-red-500" : ""}
+                  />
+                  {errors.tgUsername && (
+                    <p className="text-sm text-red-500">{errors.tgUsername}</p>
+                  )}
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -459,7 +480,7 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="john@example.com"
+                    placeholder="mrjohn@example.com"
                     className={errors.email ? "border-red-500" : ""}
                     disabled
                   />

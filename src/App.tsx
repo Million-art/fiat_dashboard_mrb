@@ -7,10 +7,10 @@ import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import LoginPage from "./pages/Login";
 import AmbassadorRegister from "./pages/RegisterAmbasador";
 import ForgotPassword from "./pages/ForgotPassword";
-import AdminRegister from "./pages/AdminRegister";
 import KYCForm from "./components/kyc/KycForm";
 import AdminKYCReview from "./pages/AdminKYCReview";
 import { useAuth } from "./context/AuthContext";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 const App = () => {
   return (
@@ -22,7 +22,6 @@ const App = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/ambassador-register" element={<AmbassadorRegister />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/admin-register" element={<AdminRegister />} />
 
           {/* KYC Form Route */}
           <Route
@@ -36,7 +35,7 @@ const App = () => {
 
           {/* Protected routes */}
           <Route
-            path="/admin"
+            path="/admin-dashboard"
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
@@ -44,7 +43,7 @@ const App = () => {
             }
           />
           <Route
-            path="/ambassador"
+            path="/ambassador-dashboard"
             element={
               <ProtectedRoute requiredRole="ambassador">
                 <AmbassadorDashboard />
@@ -59,6 +58,15 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          
+        <Route
+          path="/superadmin-dashboard"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
           {/* Default redirects */}
           <Route path="/" element={<Navigate to="/login" replace />} />
