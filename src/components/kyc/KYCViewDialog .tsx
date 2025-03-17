@@ -7,8 +7,8 @@ interface KYCViewDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   kyc: KYCApplication | null;
-  onApprove: (kycId: string) => Promise<void>; // Ensure onApprove is async
-  onReject: (kycId: string) => Promise<void>; // Ensure onReject is async
+  onApprove: (kycId: string) => Promise<void>; 
+  onReject: (kycId: string) => Promise<void>; 
 }
 
 export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, onReject }: KYCViewDialogProps) {
@@ -31,7 +31,7 @@ export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, on
 
     setApproving(true); 
     try {
-      await onApprove(kyc.id); // Await the async function
+      await onApprove(kyc.id);
     } catch (error) {
       console.error("Error approving KYC:", error);
     } finally {
@@ -44,7 +44,7 @@ export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, on
 
     setRejecting(true);  
     try {
-      await onReject(kyc.id); // Await the async function
+      await onReject(kyc.id); 
     } catch (error) {
       console.error("Error rejecting KYC:", error);
     } finally {
@@ -78,10 +78,7 @@ export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, on
                   <h3 className="font-medium text-gray-600">Email:</h3>
                   <p className="text-lg">{kyc.email}</p>
                 </div>
-                <div>
-                  <h3 className="font-medium text-gray-600">Phone Number:</h3>
-                  <p className="text-lg">{kyc.phone}</p>
-                </div>
+
                 <div>
                   <h3 className="font-medium text-gray-600">Address:</h3>
                   <p className="text-lg">{kyc.address}</p>
@@ -166,13 +163,13 @@ export default function KYCViewDialog({ isOpen, onOpenChange, kyc, onApprove, on
               <Button
                 variant="destructive"
                 onClick={handleReject}
-                disabled={approving || rejecting} // Disable if either button is loading
+                disabled={approving || rejecting} 
               >
                 {rejecting ? "Rejecting..." : "Reject"}
               </Button>
               <Button
                 onClick={handleApprove}
-                disabled={approving || rejecting} // Disable if either button is loading
+                disabled={approving || rejecting} 
               >
                 {approving ? "Approving..." : "Approve"}
               </Button>

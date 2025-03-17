@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { auth, db, storage } from "../../firebase/firebaseConfig";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import PhoneInput from "react-phone-number-input";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -24,10 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import countries from "../../lib/countries.json";
 import { KYCApplication } from "../../types";
-import { E164Number } from "libphonenumber-js";
 import SubmitMessage from "./SubmitMessage";
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import countries from "../../lib/countries.json"; 
 
 interface KYCFormProps {
   ambassadorId: string;
@@ -37,7 +36,6 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
   const [activeTab, setActiveTab] = useState("personal");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  // Form data
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -50,7 +48,6 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
     photoUrl: "",
   });
 
-  // File uploads
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
@@ -58,7 +55,6 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
   const [idFrontPreview, setIdFrontPreview] = useState<string | null>(null);
   const [idBackPreview, setIdBackPreview] = useState<string | null>(null);
 
-  // Validation errors
   const [errors, setErrors] = useState<Record<string, string | null>>({
     firstName: null,
     lastName: null,
@@ -73,15 +69,12 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
     idBack: null,
   });
 
-  // Fetch ambassador data on component mount
   useEffect(() => {
     const fetchAmbassadorData = async () => {
       try {
         const ambassadorDoc = await getDoc(doc(db, "staffs", ambassadorId));
         if (ambassadorDoc.exists()) {
           const data = ambassadorDoc.data();
-  
-          // Set form data
           setFormData({
             firstName: data.firstName || "",
             lastName: data.lastName || "",
@@ -93,13 +86,11 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
             documentType: data.documentType || "Passport",
             photoUrl: data.photoUrl || "",
           });
-  
-          // Set photo preview if photoUrl exists
+
           if (data.photoUrl) {
             setPhotoPreview(data.photoUrl);
           }
-  
-          // Fetch and set ID front and back URLs if they exist
+
           if (data.documentFrontUrl) {
             setIdFrontPreview(data.documentFrontUrl);
           }
@@ -111,25 +102,17 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         console.error("Error fetching ambassador data:", err);
       }
     };
-  
+
     fetchAmbassadorData();
   }, [ambassadorId]);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
-
-  const handleCountryChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, country: value }));
-    if (errors.country) {
-      setErrors((prev) => ({ ...prev, country: null }));
     }
   };
 
@@ -142,30 +125,19 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
 
   const handlePhotoChange = (file: File | null) => {
     if (file) {
-      // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        setErrors((prev) => ({
-          ...prev,
-          photo: "File size exceeds 5MB limit",
-        }));
+        setErrors((prev) => ({ ...prev, photo: "File size exceeds 5MB limit" }));
         return;
       }
 
-      // Validate file type (image only)
       if (!file.type.startsWith("image/")) {
-        setErrors((prev) => ({
-          ...prev,
-          photo: "Only image files are allowed",
-        }));
+        setErrors((prev) => ({ ...prev, photo: "Only image files are allowed" }));
         return;
       }
 
-      // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setPhotoFile(file);
       setPhotoPreview(previewUrl);
-
-      // Clear error
       setErrors((prev) => ({ ...prev, photo: null }));
     } else {
       setPhotoFile(null);
@@ -178,16 +150,11 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
     file: File | null
   ) => {
     if (file) {
-      // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        setErrors((prev) => ({
-          ...prev,
-          [fileType]: "File size exceeds 5MB limit",
-        }));
+        setErrors((prev) => ({ ...prev, [fileType]: "File size exceeds 5MB limit" }));
         return;
       }
 
-      // Create preview URL
       const previewUrl = URL.createObjectURL(file);
 
       if (fileType === "idFront") {
@@ -198,10 +165,8 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         setIdBackPreview(previewUrl);
       }
 
-      // Clear error
       setErrors((prev) => ({ ...prev, [fileType]: null }));
     } else {
-      // Clear file and preview
       if (fileType === "idFront") {
         setIdFrontFile(null);
         setIdFrontPreview(null);
@@ -236,6 +201,9 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
 
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
+      isValid = false;
+    } else if (!isValidPhoneNumber(formData.phone)) {
+      newErrors.phone = "Phone number is invalid";
       isValid = false;
     }
 
@@ -296,13 +264,6 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
     }
   };
 
-  const handlePhoneChange = (value: E164Number | undefined) => {
-    setFormData((prev) => ({ ...prev, phone: value || "" }));
-    if (errors.phone) {
-      setErrors((prev) => ({ ...prev, phone: null }));
-    }
-  };
-
   const uploadFile = async (file: File, path: string) => {
     const fileRef = ref(storage, path);
     await uploadBytes(fileRef, file);
@@ -311,56 +272,42 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    // Validate both steps
+
     const isPersonalValid = validatePersonalInfo();
     const isIdValid = validateIdVerification();
-    console.log(isPersonalValid, isIdValid);
+
     if (!isPersonalValid) {
       setActiveTab("personal");
       return;
     }
-  
+
     if (!isIdValid) {
       setActiveTab("verification");
       return;
     }
-  
+
     try {
       setIsSubmitting(true);
-      
-      const user = auth.currentUser; 
+
+      const user = auth.currentUser;
       if (!user) {
         throw new Error("User is not authenticated.");
       }
-  
+
       const userUid = user.uid;
-  
-      // Ensure the ambassadorId matches the authenticated user's UID
+
       if (ambassadorId !== userUid) {
         throw new Error("Unauthorized: Ambassador ID does not match authenticated user.");
       }
 
-      // Upload profile photo
       let photoUrl = formData.photoUrl;
       if (photoFile) {
-        photoUrl = await uploadFile(
-          photoFile,
-          `kyc/${userUid}/profile_photo.jpg`
-        );
+        photoUrl = await uploadFile(photoFile, `kyc/${userUid}/profile_photo.jpg`);
       }
-  
-      // Upload ID files
-      const idFrontUrl = await uploadFile(
-        idFrontFile as File,
-        `kyc/${userUid}/id_front.jpg`
-      );
-      const idBackUrl = await uploadFile(
-        idBackFile as File,
-        `kyc/${userUid}/id_back.jpg`
-      );
-  
-      // Create KYC application object
+
+      const idFrontUrl = await uploadFile(idFrontFile as File, `kyc/${userUid}/id_front.jpg`);
+      const idBackUrl = await uploadFile(idBackFile as File, `kyc/${userUid}/id_back.jpg`);
+
       const kycApplication: KYCApplication = {
         id: userUid,
         ambassadorId: userUid,
@@ -368,9 +315,7 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         lastName: formData.lastName,
         tgUsername: formData.tgUsername,
         email: formData.email,
-        phone: formData.phone,
         address: formData.address,
-        country: formData.country,
         photoUrl: photoUrl,
         documentType: formData.documentType,
         documentFrontUrl: idFrontUrl,
@@ -378,13 +323,9 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         status: "pending",
         submittedAt: new Date().toISOString(),
       };
-  
-      console.log("KYC Application Data:", kycApplication);
-  
-      // Save application to Firestore
+
       await setDoc(doc(db, "kycApplications", userUid), kycApplication);
-  
-      // Update ambassador's KYC status to "pending"
+
       await setDoc(
         doc(db, "staffs", userUid),
         {
@@ -393,9 +334,8 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
         },
         { merge: true }
       );
-  
-      setSubmitSuccess(true);
 
+      setSubmitSuccess(true);
     } catch (error) {
       console.error("Error submitting KYC application:", error);
     } finally {
@@ -404,10 +344,7 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
   };
 
   if (submitSuccess) {
-    return (
-      <SubmitMessage />
-
-    );
+    return <SubmitMessage />;
   }
 
   return (
@@ -488,42 +425,18 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
                     <p className="text-sm text-red-500">{errors.email}</p>
                   )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <PhoneInput
-                    international
-                    defaultCountry="US"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    className={`w-full p-2 border ${
-                      errors.phone ? "border-red-500" : "border-gray-300"
-                    } rounded-md`}
-                    placeholder="Enter phone number"
-                  />
-                  {errors.phone && (
-                    <p className="text-sm text-red-500">{errors.phone}</p>
-                  )}
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
                   <Select
                     value={formData.country}
-                    onValueChange={handleCountryChange}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, country: value }))}
                   >
-                    <SelectTrigger
-                      className={errors.country ? "border-red-500" : ""}
-                    >
+                    <SelectTrigger className={errors.country ? "border-red-500" : ""}>
                       <SelectValue placeholder="Select your country" />
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((country, index) => (
-                        <SelectItem
-                          key={index}
-                          value={country.name}
-                          className="bg-gray-800 text-white"
-                        >
+                        <SelectItem key={index} value={country.name}>
                           {country.name}
                         </SelectItem>
                       ))}
@@ -533,7 +446,21 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
                     <p className="text-sm text-red-500">{errors.country}</p>
                   )}
                 </div>
-
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <PhoneInput
+                    defaultCountry="VE"
+                    value={formData.phone}
+                    onChange={(value:any) => setFormData((prev) => ({ ...prev, phone: value || "" }))}
+                    className={`w-full p-2 border ${
+                      errors.phone ? "border-red-500" : "border-gray-300"
+                    } rounded-md`}
+                    placeholder="Enter phone number"
+                  />
+                  {errors.phone && (
+                    <p className="text-sm text-red-500">{errors.phone}</p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="documentType">Document Type</Label>
                   <Select
