@@ -5,11 +5,9 @@ export interface KYCApplication {
   lastName: string; // Applicant's last name
   tgUsername: string; // Applicant's tg name
   email: string; // Applicant's email address
-  phone: string; // Applicant's phone number
   address: string; // Applicant's address
   documentType: string; // Type of document submitted (e.g., "Passport", "Driver's License")
   photoUrl: string;
-  country: string; 
   documentFrontUrl: string; // URL to the front of the document
   documentBackUrl?: string; // Optional URL to the back of the document (if applicable)
   status: "pending" | "approved" | "rejected"; // Status of the KYC application

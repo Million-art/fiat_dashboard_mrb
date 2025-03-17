@@ -155,7 +155,7 @@ const AmbassadorDashboard: React.FC = () => {
             <p className="text-gray-500 mb-4">{ambassador.email}</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* <div>
+              <div>
                 <p className="text-sm font-medium">Phone</p>
                 <p>{ambassador.phone}</p>
               </div>
@@ -163,7 +163,7 @@ const AmbassadorDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium">Country</p>
                 <p>{ambassador.country}</p>
-              </div> */}
+              </div>
             </div>
           </div>
         </div>
