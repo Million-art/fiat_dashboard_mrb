@@ -32,7 +32,7 @@ export default function AmbassadorRegister() {
     email: "",
     phone: "",
     password: "",
-    country: "", // Added country field
+    country: "", 
   });
 
   // Validation errors
