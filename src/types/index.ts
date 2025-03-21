@@ -68,4 +68,19 @@ export interface Receipt {
   }
   
   
-  
+  export interface Country {
+    name: string;
+    currency:string;
+    code: string;
+    flag: string;
+  }
+
+export interface Receipt {
+  id: string;
+  aId: string;
+  amount: number;
+  senderTgId: string;
+  documents: string[];
+  status: string; 
+  createdAt: Date;
+}

@@ -1,14 +1,9 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import TransactionList from "../ambassador/TransactionList";
 import { Upload } from "lucide-react";
-import { Transaction } from "../../types";
 
-interface TransactionsProps {
-  transactions: Transaction[];
-}
 
-const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
+const Transactions= () => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -16,7 +11,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
         <Upload className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <TransactionList transactions={transactions} />
+        <TransactionList  />
       </CardContent>
     </Card>
   );
