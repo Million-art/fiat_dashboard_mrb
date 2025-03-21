@@ -15,6 +15,7 @@ firebase
 env
 .env
 makeSuperAdmin.js
+initializeRealBalance.js
 serviceAccountKey.json
 # Editor directories and files
 .vscode/*

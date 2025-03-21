@@ -42,9 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         await user.getIdToken(true);
         const idTokenResult = await user.getIdTokenResult(true);
-  
-        console.log("Custom Claims:", idTokenResult.claims);
-  
+    
         let userRole: "admin" | "ambassador" | "superadmin" = "ambassador"; // Default role
         if (idTokenResult.claims.superadmin) {
           userRole = "superadmin";
@@ -60,7 +58,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
   
         setCurrentUser(authUser);
-        console.log("Auth User Set:", authUser);
       } catch (error) {
         console.error("Error fetching user data:", error);
         setCurrentUser(null);
