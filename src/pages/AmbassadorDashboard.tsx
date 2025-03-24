@@ -1,44 +1,48 @@
-import React, { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import Receipts from "../components/ambassador/Receipts";
-import Transactions from "../components/ambassador/Transactions";
-import LoadingScreen from "./Loading";
-import { Alert, AlertDescription } from "../components/ui/alert";
-import { Info } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import type { Ambassador } from "../types";
+"use client"
+
+import type React from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams, Link } from "react-router-dom"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "../firebase/firebaseConfig"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
+import Receipts from "../components/ambassador/Receipts"
+import Transactions from "../components/ambassador/Transactions"
+import BankAccounts from "../components/ambassador/BankAccounts"
+import LoadingScreen from "./Loading"
+import { Alert, AlertDescription } from "../components/ui/alert"
+import { Info } from "lucide-react"
+import { useAuth } from "../context/AuthContext"
+import type { Ambassador } from "../types"
 
 const AmbassadorDashboard: React.FC = () => {
-  const [ambassador, setAmbassador] = useState<Ambassador | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { currentUser } = useAuth();
-  const [searchParams] = useSearchParams();
-  const ambassadorId = searchParams.get("userId") || currentUser?.uid;
+  const [ambassador, setAmbassador] = useState<Ambassador | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { currentUser } = useAuth()
+  const [searchParams] = useSearchParams()
+  const ambassadorId = searchParams.get("userId") || currentUser?.uid
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!ambassadorId) return;
+      if (!ambassadorId) return
 
-      setLoading(true);
+      setLoading(true)
       try {
-        const ambassadorDoc = await getDoc(doc(db, "staffs", ambassadorId));
+        const ambassadorDoc = await getDoc(doc(db, "staffs", ambassadorId))
         if (ambassadorDoc.exists()) {
-          setAmbassador({ id: ambassadorDoc.id, ...ambassadorDoc.data() } as Ambassador);
+          setAmbassador({ id: ambassadorDoc.id, ...ambassadorDoc.data() } as Ambassador)
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchData();
-  }, [ambassadorId]);
+    fetchData()
+  }, [ambassadorId])
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LoadingScreen />
 
   return (
     <div className="container mx-auto p-4">
@@ -48,7 +52,11 @@ const AmbassadorDashboard: React.FC = () => {
         <Alert variant="warning" className="mb-6">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Your KYC is pending. Please <Link to="/complete-kyc" className="text-primary underline">complete your KYC</Link> to access all features.
+            Your KYC is pending. Please{" "}
+            <Link to="/complete-kyc" className="text-primary underline">
+              complete your KYC
+            </Link>{" "}
+            to access all features.
           </AlertDescription>
         </Alert>
       )}
@@ -56,7 +64,11 @@ const AmbassadorDashboard: React.FC = () => {
       {ambassador && (
         <div className="flex flex-col md:flex-row gap-6 mb-8">
           <div className="flex-shrink-0">
-            <img src={ambassador.photoUrl || "/placeholder.svg"} alt={ambassador.firstName} className="w-32 h-32 rounded-full object-cover" />
+            <img
+              src={ambassador.photoUrl || "/placeholder.svg"}
+              alt={ambassador.firstName}
+              className="w-32 h-32 rounded-full object-cover"
+            />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold">{ambassador.firstName + " " + ambassador.lastName}</h2>
@@ -79,6 +91,7 @@ const AmbassadorDashboard: React.FC = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="receipts">My Receipts</TabsTrigger>
           <TabsTrigger value="transactions">My Transactions</TabsTrigger>
+          <TabsTrigger value="bankAccounts">Bank Accounts</TabsTrigger>
         </TabsList>
         <TabsContent value="receipts">
           <Receipts />
@@ -86,9 +99,13 @@ const AmbassadorDashboard: React.FC = () => {
         <TabsContent value="transactions">
           <Transactions />
         </TabsContent>
+        <TabsContent value="bankAccounts">
+          <BankAccounts />
+        </TabsContent>
       </Tabs>
     </div>
-  );
-};
+  )
+}
 
-export default AmbassadorDashboard;
+export default AmbassadorDashboard
+
